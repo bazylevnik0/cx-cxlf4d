@@ -1,0 +1,271 @@
+<html>
+
+<head>
+  <title>GGJ2023</title>
+  <link rel="stylesheet" href="/stylesheets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.x/dist/pixi.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+  <style>
+    body {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <p>For playing game - just click to the shine root...</p>
+  <p>Goal - growth through stones to screen borders.</p>
+  <script> 
+      let level = 1;
+      
+      // Create the application helper and add its render target to the page
+      let app = new PIXI.Application({ width: 1084, height: 610 });
+      document.body.appendChild(app.view);
+
+      //sounds
+      var sound_play = false;
+      var main_theme = new Howl({
+         loop: true,
+         src: ['sounds/main_theme.mp3']
+      });
+      var ResetStone_1 = new Howl({
+         loop: false,
+         src: ['sounds/ResetStone_1.wav']
+      });
+      var ResetStone_2 = new Howl({
+         loop: false,
+         src: ['sounds/ResetStone_2.wav']
+      });
+      var ResetStone_3 = new Howl({
+         loop: false,
+         src: ['sounds/ResetStone_3.wav']
+      });
+      var Rootclick_1 = new Howl({
+         loop: false,
+         src: ['sounds/Rootclick_1.wav']
+      });
+      var Rootclick_2 = new Howl({
+         loop: false,
+         src: ['sounds/Rootclick_2.wav']
+      });
+      var Rootclick_3 = new Howl({
+         loop: false,
+         src: ['sounds/Rootclick_3.wav']
+      });
+      var Rootfail = new Howl({
+         loop: false,
+         src: ['sounds/Rootfail.wav']
+      });
+      var Rootsuccess = new Howl({
+         loop: false,
+         src: ['sounds/Rootsuccess.wav']
+      });
+
+      //images
+      // Create the sprites and add it to the stage  
+      //bg
+      let bg = PIXI.Sprite.from('images/bg.png');
+      app.stage.addChild(bg);
+      //ui
+      //resetstones
+      let resetstones;
+      resetstones = PIXI.Sprite.from('images/resetstones.png');
+      resetstones.interactive = true;
+      resetstones.buttonMode = true;
+      resetstones.on('pointerdown', change_level_repeat);
+      app.stage.addChild(resetstones);
+      resetstones.x = 750;
+      resetstones.y = 50;
+      //level
+      let style = new PIXI.TextStyle({
+          fontFamily: 'Arial',
+          fontSize: 36,
+          fontStyle: 'italic',
+          fontWeight: 'bold',
+          fill: ['#ffffff', '#00ff99'], // gradient
+      });
+      let leveltext = new PIXI.Text('Level:'+ level,style);
+      leveltext.x = 50;
+      leveltext.y = 50;
+      app.stage.addChild(leveltext);
+
+      //roots & stones
+      let root;
+      let old_roots = [];
+      let old_roots_count = 0;  
+      add_root();
+      root.interactive = true;
+      root.buttonMode = true;
+      root.on('pointerdown', root_growth);
+      let stones = [];
+      add_stones();
+      //loop
+      // Add a ticker callback to move the sprite back and forth
+      let elapsed = 0.0;
+      app.ticker.add((delta) => {
+        elapsed += delta;
+      });
+      //custom functions
+      function add_root() {
+          root = PIXI.Sprite.from('images/root+.png');
+          app.stage.addChild(root);
+          root.x = 1084/2-50;
+          root.y = 200;
+      }
+      function add_stones() {
+        for( let i = 0; i< 5;i++) {
+          let rock_choice = Math.floor(Math.random()*5)+1;
+          stones[i] = PIXI.Sprite.from('images/rock'+rock_choice+'.png');  
+          
+          app.stage.addChild(stones[i]);
+          //calculate stone position
+          stones[i].x = Math.round(Math.random()*(1084-200))+100;
+          stones[i].y = Math.round(Math.random()*(610-150))+150;
+          //if stone near to start position then recalculate
+          while((stones[i].x+75) > 1084/2-300 && (stones[i].x+75) < 1084/2+300 && (stones[i].y+75) < 350) {
+            stones[i].x = Math.round(Math.random()*(1084-200))+100;
+            stones[i].y = Math.round(Math.random()*(610-150))+150;
+          }
+        }
+      }
+      function root_growth(){
+          //if it first click
+          if(sound_play == false) {
+            main_theme.play();
+            sound_play = true;
+          }
+          //choose random horizontal direction
+          let direction = Math.floor(Math.random()*2);
+          if (direction == 0) {
+            direction = -1;
+          } else {
+            direction = 1;
+          }
+          //choose random length of move
+          let h_size = Math.round(Math.random()*3);
+          let v_size = Math.round(Math.random()*3);
+          //move vertical
+          for(let i = 0;i < v_size; i++)
+          {
+            let root_choose = Math.floor(Math.random()*2)+1;
+                                      //using PIXI.sprite in this loop
+                                      //it is not most effective way but it works
+                                      //better use this: https://pixijs.download/release/docs/PIXI.Spritesheet.html
+             old_roots[old_roots_count] = PIXI.Sprite.from('images/rootv'+root_choose+'.png');
+             app.stage.addChild(old_roots[old_roots_count]);
+             old_roots[old_roots_count].x = root.x/1;
+             old_roots[old_roots_count].y = root.y/1;
+             old_roots_count++;   
+             root.y += 75;  
+          }
+          //move horizontal
+          for(let i = 0;i < h_size; i++)
+          {
+             if( direction == -1){
+              old_roots[old_roots_count] = PIXI.Sprite.from('images/roothl.png');
+             }
+             if( direction == 1){
+              old_roots[old_roots_count] = PIXI.Sprite.from('images/roothr.png');
+             }
+             app.stage.addChild(old_roots[old_roots_count]);
+             old_roots[old_roots_count].x = root.x/1;
+             old_roots[old_roots_count].y = root.y/1;
+             old_roots_count++;   
+             root.x += 75*direction;
+          } 
+          //check colisions
+          //with borders
+          let collision = false;
+          if(root.x < 0 || root.x > 1084 || root.y > 560)
+          {
+            collision = true;
+            change_level_up();
+          }
+          //with stones
+          for(let i = 0; i < 5; i++) {
+            if (Math.abs((root.x+37) - (stones[i].x+75)) <= 100 && Math.abs((root.y+37) - (stones[i].y+75)) <= 100) {
+              collision = true;
+              change_level_repeat_again();
+            }
+          }
+          if(collision == false) {
+            //play sound of root growth
+            let choose_sound = Math.floor(Math.random()*3)+1;
+            if(choose_sound == 1) {
+              Rootclick_1.play();
+            }
+            if(choose_sound == 2) {
+              Rootclick_2.play();
+            }
+            if(choose_sound == 3) {
+              Rootclick_3.play();
+            } 
+          }
+      }
+      function change_level_up(){
+        //remove old_roots
+        for(let i = 0; i < old_roots_count; i++){
+            app.stage.removeChild(old_roots[i]);
+            old_roots[i] = 0;
+            root.x = 1084/2-50;
+            root.y = 200;           
+        }
+        //change stones position
+        for( let i = 0; i< 5;i++) {
+          stones[i].x = Math.round(Math.random()*(1084-200))+100;
+          stones[i].y = Math.round(Math.random()*(610-150))+150;
+          //if stone near to start position then recalculate
+          while((stones[i].x+75) > 1084/2-300 && (stones[i].x+75) < 1084/2+300 && (stones[i].y+75) < 350) {
+            stones[i].x = Math.round(Math.random()*(1084-200))+100;
+            stones[i].y = Math.round(Math.random()*(610-150))+150;
+          }
+        }
+        level++;
+        leveltext.text = "Level:"+level;
+        //play sound
+        Rootsuccess.play()
+      }
+      function change_level_repeat_again(){
+        //remove old_roots
+        for(let i = 0; i < old_roots_count; i++){
+            app.stage.removeChild(old_roots[i]);
+            old_roots[i] = 0;
+            root.x = 1084/2-50;
+            root.y = 200;           
+        }
+        //play sound
+        Rootfail.play();
+      }
+      function change_level_repeat(){
+        //remove old_roots
+        for(let i = 0; i < old_roots_count; i++){
+            app.stage.removeChild(old_roots[i]);
+            old_roots[i] = 0;
+            root.x = 1084/2-50;
+            root.y = 200;           
+        }  //change stones position
+        for( let i = 0; i< 5;i++) {
+          stones[i].x = Math.round(Math.random()*(1084-200))+100;
+          stones[i].y = Math.round(Math.random()*(610-150))+150;
+          //if stone near to start position then recalculate
+          while((stones[i].x+75) > 1084/2-300 && (stones[i].x+75) < 1084/2+300 && (stones[i].y+75) < 350) {
+            stones[i].x = Math.round(Math.random()*(1084-200))+100;
+            stones[i].y = Math.round(Math.random()*(610-150))+150;
+          }
+        }
+        //play sound
+        let choose_sound = Math.floor(Math.random()*3)+1;
+        if(choose_sound == 1) {
+          ResetStone_1.play();
+        }
+        if(choose_sound == 2) {
+          ResetStone_2.play();
+        }
+        if(choose_sound == 3) {
+          ResetStone_3.play();
+        }
+      }
+      console.log(2);
+    </script>
+</body>
+
+</html>
